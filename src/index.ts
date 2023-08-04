@@ -141,7 +141,7 @@ function registerAllKoishiCommands(ctx: Context) {
       if (isGameTableNotExist(gameInfo)) {
         // 在表格中创建游戏
         createGame(ctx, session.guildId, session.userId)
-        return JOIN_SUCCESS + `当前玩家人数：${gameInfo[0].members.length} 人！`
+        return JOIN_SUCCESS + `当前玩家人数：1 人！`
       }
       // 检查游戏是否已经开始
       if (checkGameStatus(gameInfo)) {

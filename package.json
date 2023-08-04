@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-last-man-standing",
-  "description": "",
-  "version": "0.0.1",
+  "description": "玩家轮流拿起手枪对自己的脑门开枪，直到只剩下最后一个人。",
+  "version": "1.1.2",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -9,11 +9,21 @@
     "dist"
   ],
   "license": "MIT",
+  "author": "Nawyjx <3373167460@qq.com>",
+  "homepage": "https://www.npmjs.com/package/koishi-plugin-last-man-standing?activeTab=readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/araea/koishi-plugin-last-man-standing.git"
+  },
   "scripts": {},
   "keywords": [
     "chatbot",
     "koishi",
-    "plugin"
+    "plugin",
+    "game",
+    "last-man-standing",
+    "russian roulette",
+    "shoot"
   ],
   "peerDependencies": {
     "koishi": "^4.14.0"

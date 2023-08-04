@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-last-man-standing",
   "description": "玩家轮流拿起手枪对自己的脑门开枪，直到只剩下最后一个人。",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [

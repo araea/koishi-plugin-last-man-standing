@@ -252,8 +252,8 @@ function registerAllKoishiCommands(ctx: Context) {
               // 为胜利者增加积分
               const rankInfo = await getRankInfo(ctx, newMembers[0])
               if (isRankTableNotExist(rankInfo)) {
-                createPlayer(ctx, newMembers[0], (await session.bot.getUser(newMembers[0])).username, gameInfo[0].score)
-                // createPlayer(ctx, newMembers[0], `${h.at(newMembers[0])}`, gameInfo[0].score)
+                // createPlayer(ctx, newMembers[0], (await session.bot.getUser(newMembers[0])).username, gameInfo[0].score)
+                createPlayer(ctx, newMembers[0], `${h.at(newMembers[0])}`, gameInfo[0].score)
               } else {
                 updateScore(ctx, newMembers[0], rankInfo[0].score + gameInfo[0].score)
               }

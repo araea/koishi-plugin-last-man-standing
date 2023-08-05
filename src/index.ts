@@ -244,7 +244,7 @@ function registerAllKoishiCommands(ctx: Context) {
           let newMembers = gameInfo[0].members
           if (Math.random() < gameInfo[0].hitRate) {
             // 死亡
-            await session.send(SHOOT_SUCCESS)
+            await session.sendQueued(SHOOT_SUCCESS)
             // 从成员列表中移除用户
             newMembers.splice(newMembers.indexOf(session.userId), 1)
             // 获胜
@@ -258,20 +258,20 @@ function registerAllKoishiCommands(ctx: Context) {
                 updateScore(ctx, newMembers[0], rankInfo[0].score + gameInfo[0].score)
               }
               restartGame(ctx, session.guildId)
-              await session.send(`${h.at(newMembers[0])} 赢了！获得 ${gameInfo[0].score} 点积分！`)
+              await session.sendQueued(`${h.at(newMembers[0])} 赢了！获得 ${gameInfo[0].score} 点积分！`)
               return
             }
             // 根据玩家人数计算开枪成功率
             const hitRate = getHitRate(newMembers.length)
             updateGameStateOnDeath(ctx, session.guildId, newMembers, newMembers[0], hitRate)
-            await session.send(`接下来有请 ${h.at(newMembers[0])} 开枪！`)
+            await session.sendQueued(`接下来有请 ${h.at(newMembers[0])} 开枪！`)
           } else {
             // 存活
-            await session.send(SHOOT_SURVIVAL)
+            await session.sendQueued(SHOOT_SURVIVAL)
             // 获取下一位玩家 Id
             const memberId = getNextPlayerId(newMembers, gameInfo[0].memberId)
             updateGameStateOnSurvival(ctx, session.guildId, memberId)
-            await session.send(`接下来有请 ${h.at(memberId)} 开枪！`)
+            await session.sendQueued(`接下来有请 ${h.at(memberId)} 开枪！`)
           }
         } else {
           return SHOOT_FAIL

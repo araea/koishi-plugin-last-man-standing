@@ -1,6 +1,7 @@
-import { Context, Schema, h } from 'koishi'
+import { Context, Logger, Schema, h } from 'koishi'
 
 export const name = 'last-man-standing'
+export const logger = new Logger(`LMS`)
 export const usage = `## 🎮 使用
 
 - 仅群聊触发
@@ -110,20 +111,22 @@ function registerAllKoishiCommands(ctx: Context) {
   const GAME_ID = 'lms_games'
   const RANK_ID = 'lms_rank'
   // 消息
-  const JOIN_SUCCESS = '您已成功加入游戏！'
-  const JOIN_FAIL = '您已加入游戏，请不要重复加入！'
-  const QUIT_SUCCESS = '您已成功退出游戏！'
-  const QUIT_FAIL = '您还未加入游戏，怎么退出呢！'
-  const START_SUCCESS = `游戏开始！`
-  const START_FAIL = '人数不足，无法开始游戏！'
-  const RESTART_SUCCESS = '游戏已重新开始！'
-  const RESTART_FAIL = '游戏未开始，无需重开！'
-  const SHOOT_SUCCESS = '砰！你死了！'
-  const SHOOT_FAIL = '当前不是您的回合！'
-  const SHOOT_SURVIVAL = '恭喜您存活了下来！'
-  const POINTS_FAIL = '查无此人！'
-  const GAME_STARTED = '游戏不存在或已开始！'
-  const GAME_NOT_STARTED = '游戏未开始！'
+  // 消息
+  const JOIN_SUCCESS = '🎉 欢迎加入最后一人站立的残酷竞赛！'
+  const JOIN_FAIL = '😅 嘿，你已经在游戏里了，别着急嘛~'
+  const QUIT_SUCCESS = '👋 哎呀，你就这么放弃了吗？再见啦~'
+  const QUIT_FAIL = '😕 呃，你还没参加游戏呢，想跑哪儿去？'
+  const START_SUCCESS = `🔫 火拼正式开启，祝你好运啊！`
+  const START_FAIL = '😢 哎哟，人手不够啊，快叫上你的小伙伴们吧。'
+  const RESTART_SUCCESS = '🔄 好吧，既然你们都想重来，那就重新开始吧。'
+  const RESTART_FAIL = '🤔 诶？游戏还没开始呢，你想重来什么？'
+  const SHOOT_SUCCESS = '💥 砰！你倒下了，再见了残忍的世界。'
+  const SHOOT_FAIL = '😮 喂喂喂，现在还不轮到你呢，别急着送死啊。'
+  const SHOOT_SURVIVAL = '🎊 哇，你居然活下来了，真是太厉害了！'
+  const POINTS_FAIL = '😥 抱歉，我找不到这个人，你确定他参加过游戏吗？'
+  const GAME_STARTED = '😯 哎呀，游戏已经开始了，你来晚了一步啊。'
+  const GAME_NOT_STARTED = '😐 呃，游戏还没开始呢，你想干嘛？'
+
 
   // 注册指令
 
@@ -167,7 +170,7 @@ function registerAllKoishiCommands(ctx: Context) {
       // 获取游戏信息
       const gameInfo = await getGameInfo(ctx, session.guildId)
       // 检查游戏是否已经开始
-      if (checkGameStatus(gameInfo)) {
+      if (isGameTableNotExist(gameInfo) || checkGameStatus(gameInfo)) {
         return GAME_STARTED
       } else {
         // 获取成员列表
@@ -190,7 +193,7 @@ function registerAllKoishiCommands(ctx: Context) {
       // 获取游戏信息
       const gameInfo = await getGameInfo(ctx, session.guildId)
       // 检查游戏是否已经开始
-      if (checkGameStatus(gameInfo)) {
+      if (isGameTableNotExist(gameInfo) || checkGameStatus(gameInfo)) {
         return GAME_STARTED
       } else {
         // 检查用户是否达到两人
@@ -216,11 +219,11 @@ function registerAllKoishiCommands(ctx: Context) {
     .action(async ({ session }) => {
       // 获取游戏信息
       const gameInfo = await getGameInfo(ctx, session.guildId)
+      if (isGameTableNotExist(gameInfo)) {
+        return RESTART_FAIL
+      }
       // 检查游戏是否已经开始
       if (checkGameStatus(gameInfo)) {
-        if (isGameTableNotExist(gameInfo)) {
-          return RESTART_FAIL
-        }
         restartGame(ctx, session.guildId)
         return RESTART_SUCCESS
       } else {
@@ -231,55 +234,27 @@ function registerAllKoishiCommands(ctx: Context) {
   // 开枪
   ctx.command('lms.shoot', '开枪')
     .action(async ({ session }) => {
-      // 获取游戏信息
-      const gameInfo = await getGameInfo(ctx, session.guildId)
-      // 检查游戏是否已经开始
-      if (checkGameStatus(gameInfo)) {
-        if (isGameTableNotExist(gameInfo)) {
-          return GAME_NOT_STARTED
+      try {
+        // 获取游戏信息
+        const gameInfo = await getGameInfo(ctx, session.guildId);
+        // 检查游戏是否已经开始
+        if (isGameTableNotExist(gameInfo) || !checkGameStatus(gameInfo)) {
+          return GAME_NOT_STARTED;
         }
         // 检查是否轮到该玩家
-        if (checkPlayerTurn(gameInfo[0].memberId, session.userId)) {
-          // 获取成员列表
-          let newMembers = gameInfo[0].members
-          if (Math.random() < gameInfo[0].hitRate) {
-            // 死亡
-            await session.sendQueued(SHOOT_SUCCESS)
-            // 从成员列表中移除用户
-            newMembers.splice(newMembers.indexOf(session.userId), 1)
-            // 获胜
-            if (newMembers.length === 1) {
-              // 为胜利者增加积分
-              const rankInfo = await getRankInfo(ctx, newMembers[0])
-              if (isRankTableNotExist(rankInfo)) {
-                // createPlayer(ctx, newMembers[0], (await session.bot.getUser(newMembers[0])).username, gameInfo[0].score)
-                createPlayer(ctx, newMembers[0], `${h.at(newMembers[0])}`, gameInfo[0].score)
-              } else {
-                updateScore(ctx, newMembers[0], rankInfo[0].score + gameInfo[0].score)
-              }
-              restartGame(ctx, session.guildId)
-              await session.sendQueued(`${h.at(newMembers[0])} 赢了！获得 ${gameInfo[0].score} 点积分！`)
-              return
-            }
-            // 根据玩家人数计算开枪成功率
-            const hitRate = getHitRate(newMembers.length)
-            updateGameStateOnDeath(ctx, session.guildId, newMembers, newMembers[0], hitRate)
-            await session.sendQueued(`接下来有请 ${h.at(newMembers[0])} 开枪！`)
-          } else {
-            // 存活
-            await session.sendQueued(SHOOT_SURVIVAL)
-            // 获取下一位玩家 Id
-            const memberId = getNextPlayerId(newMembers, gameInfo[0].memberId)
-            updateGameStateOnSurvival(ctx, session.guildId, memberId)
-            await session.sendQueued(`接下来有请 ${h.at(memberId)} 开枪！`)
-          }
-        } else {
-          return SHOOT_FAIL
+        if (!checkPlayerTurn(gameInfo[0].memberId, session.userId)) {
+          return SHOOT_FAIL;
         }
-      } else {
-        return GAME_NOT_STARTED
+        // 获取成员列表
+        let newMembers = gameInfo[0].members;
+        // 开枪
+        const isDead = await shoot(ctx, session, gameInfo[0]);
+        // 处理结果
+        await handleResult(ctx, session, gameInfo[0], newMembers, isDead);
+      } catch (error) {
+        logger.error(error);
       }
-    })
+    });
   // 我的积分
   ctx.command('lms.points', '查看我的积分')
     .action(async ({ session }) => {
@@ -292,10 +267,9 @@ function registerAllKoishiCommands(ctx: Context) {
     })
   // 排行榜
   ctx.command('lms.rank', '排行榜')
-    .action(async ({ session }) => {
+    .action(async ({ }) => {
       // 获取游戏信息
       const rankInfo: LMSRank[] = await ctx.model.get('lms_rank', {})
-      console.log(rankInfo)
       // 根据score属性进行降序排序
       rankInfo.sort((a, b) => b.score - a.score)
       // 只保留前十名玩家，并生成排行榜的纯文本
@@ -355,7 +329,7 @@ function registerAllKoishiCommands(ctx: Context) {
   }
   // 检查游戏状态
   function checkGameStatus(gameInfo: any[]) {
-    return gameInfo.length === 0 || gameInfo[0].isStarted === true
+    return gameInfo[0].isStarted === true
   }
   // 检查用户是否已加入或退出游戏
   function checkMembership(members: string[], userId: string) {
@@ -407,7 +381,53 @@ function registerAllKoishiCommands(ctx: Context) {
     let z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
     return mean + std * z;
   }
-
+  // 开枪函数
+  async function shoot(ctx: Context, session: any, game: LMSGames) {
+    // 判断是否命中
+    if (Math.random() < game.hitRate) {
+      // 死亡
+      await session.sendQueued(SHOOT_SUCCESS);
+      return true;
+    } else {
+      // 存活
+      await session.sendQueued(SHOOT_SURVIVAL);
+      return false;
+    }
+  }
+  // 处理结果函数
+  async function handleResult(ctx: Context, session: any, game: LMSGames, newMembers: string[], isDead: boolean): Promise<void> {
+    if (isDead) {
+      // 从成员列表中移除用户
+      newMembers.splice(newMembers.indexOf(session.userId), 1);
+      // 获胜
+      if (newMembers.length === 1) {
+        // 为胜利者增加积分
+        await updateScoreForWinner(ctx, newMembers[0], game.score);
+        restartGame(ctx, session.guildId);
+        await session.sendQueued(`${h.at(newMembers[0])} 赢了！获得 ${game.score} 点积分！`);
+        return;
+      }
+      // 根据玩家人数计算开枪成功率
+      const hitRate = getHitRate(newMembers.length);
+      updateGameStateOnDeath(ctx, session.guildId, newMembers, newMembers[0], hitRate);
+      await session.sendQueued(`接下来有请 ${h.at(newMembers[0])} 开枪！`);
+    } else {
+      // 获取下一位玩家 Id
+      const memberId = getNextPlayerId(newMembers, game.memberId);
+      updateGameStateOnSurvival(ctx, session.guildId, memberId);
+      await session.sendQueued(`接下来有请 ${h.at(memberId)} 开枪！`);
+    }
+  }
+  // 为胜利者增加积分函数
+  async function updateScoreForWinner(ctx: Context, winnerId: string, score: number) {
+    const rankInfo = await getRankInfo(ctx, winnerId);
+    if (isRankTableNotExist(rankInfo)) {
+      // createPlayer(ctx, winnerId, (await session.bot.getUser(winnerId)).username, score);
+      createPlayer(ctx, winnerId, `${h.at(winnerId)}`, score);
+    } else {
+      updateScore(ctx, winnerId, rankInfo[0].score + score);
+    }
+  }
 
   // 定义一个函数来生成排行榜的纯文本
   function generateRankTable(rankInfo: LMSRank[]): string {

@@ -111,7 +111,6 @@ function registerAllKoishiCommands(ctx: Context) {
   const GAME_ID = 'lms_games'
   const RANK_ID = 'lms_rank'
   // 消息
-  // 消息
   const JOIN_SUCCESS = '🎉 欢迎加入最后一人站立的残酷竞赛！'
   const JOIN_FAIL = '😅 嘿，你已经在游戏里了，别着急嘛~'
   const QUIT_SUCCESS = '👋 哎呀，你就这么放弃了吗？再见啦~'
@@ -222,14 +221,8 @@ function registerAllKoishiCommands(ctx: Context) {
       if (isGameTableNotExist(gameInfo)) {
         return RESTART_FAIL
       }
-      // 检查游戏是否已经开始
-      if (checkGameStatus(gameInfo)) {
-        restartGame(ctx, session.guildId)
-        return RESTART_SUCCESS
-      } else {
-        restartGame(ctx, session.guildId)
-        return RESTART_SUCCESS
-      }
+      restartGame(ctx, session.guildId)
+      return RESTART_SUCCESS
     })
   // 开枪
   ctx.command('lms.shoot', '开枪')
@@ -269,7 +262,7 @@ function registerAllKoishiCommands(ctx: Context) {
   ctx.command('lms.rank', '排行榜')
     .action(async ({ }) => {
       // 获取游戏信息
-      const rankInfo: LMSRank[] = await ctx.model.get('lms_rank', {})
+      const rankInfo: LMSRank[] = await ctx.model.get(RANK_ID, {})
       // 根据score属性进行降序排序
       rankInfo.sort((a, b) => b.score - a.score)
       // 只保留前十名玩家，并生成排行榜的纯文本
@@ -409,7 +402,7 @@ function registerAllKoishiCommands(ctx: Context) {
       }
       // 根据玩家人数计算开枪成功率
       const hitRate = getHitRate(newMembers.length);
-      updateGameStateOnDeath(ctx, session.guildId, newMembers, newMembers[0], hitRate);
+      updateGameStateOnDeath(ctx, session.guildId, newMembers, newMembers[newMembers.indexOf(session.userId)], hitRate);
       await session.sendQueued(`接下来有请 ${h.at(newMembers[0])} 开枪！`);
     } else {
       // 获取下一位玩家 Id

@@ -391,7 +391,8 @@ function registerAllKoishiCommands(ctx: Context) {
   async function handleResult(ctx: Context, session: any, game: LMSGames, newMembers: string[], isDead: boolean): Promise<void> {
     if (isDead) {
       // 从成员列表中移除用户
-      newMembers.splice(newMembers.indexOf(session.userId), 1);
+      const index = newMembers.indexOf(session.userId)
+      newMembers.splice(index, 1);
       // 获胜
       if (newMembers.length === 1) {
         // 为胜利者增加积分
@@ -402,7 +403,7 @@ function registerAllKoishiCommands(ctx: Context) {
       }
       // 根据玩家人数计算开枪成功率
       const hitRate = getHitRate(newMembers.length);
-      updateGameStateOnDeath(ctx, session.guildId, newMembers, newMembers[newMembers.indexOf(session.userId)], hitRate);
+      updateGameStateOnDeath(ctx, session.guildId, newMembers, newMembers[index], hitRate);
       await session.sendQueued(`接下来有请 ${h.at(newMembers[0])} 开枪！`);
     } else {
       // 获取下一位玩家 Id

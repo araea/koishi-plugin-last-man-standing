@@ -1,4 +1,4 @@
-import { Context, Logger, Schema, h } from 'koishi'
+import { Context, Logger, Schema, Session, h } from 'koishi'
 
 export const name = 'last-man-standing'
 export const logger = new Logger(`LMS`)
@@ -139,6 +139,18 @@ function registerAllKoishiCommands(ctx: Context) {
     .action(async ({ session }) => {
       // 获取游戏信息
       const gameInfo = await getGameInfo(ctx, session.guildId)
+      // 获取玩家排行榜信息
+      const rankInfo = await getRankInfo(ctx, session.userId);
+      // 判断排行榜中玩家是否存在，若不存在则创建，存在则检查玩家 userName，不同则修改
+      if (isRankTableNotExist(rankInfo)) {
+        // createPlayer(ctx, winnerId, (await session.bot.getUser(winnerId)).username, score);
+        createPlayer(ctx, session.userId, session.username, 0);
+      } else {
+        if (rankInfo[0].userName !== session.username) {
+          // 更新成员的 userName
+          updateMemberUserName(ctx, session.userId, session.username)
+        }
+      }
       // 检查当前群组的游戏在表格中是否存在
       if (isGameTableNotExist(gameInfo)) {
         // 在表格中创建游戏
@@ -161,6 +173,10 @@ function registerAllKoishiCommands(ctx: Context) {
           await updateMembers(ctx, session.guildId, newMembers)
           return JOIN_SUCCESS + `当前玩家人数：${gameInfo[0].members.length} 人！`
         }
+      }
+
+      async function updateMemberUserName(ctx: Context, userId: string, userName: string) {
+        await ctx.model.set(RANK_ID, { userId: userId }, { userName: userName })
       }
     })
   // 退出游戏
@@ -251,7 +267,7 @@ function registerAllKoishiCommands(ctx: Context) {
   // 我的积分
   ctx.command('lms.points', '查看我的积分')
     .action(async ({ session }) => {
-      // 获取游戏信息
+      // 获取排行榜信息
       const rankInfo = await getRankInfo(ctx, session.userId)
       if (isRankTableNotExist(rankInfo)) {
         return POINTS_FAIL
@@ -270,7 +286,7 @@ function registerAllKoishiCommands(ctx: Context) {
       return table
     })
 
-  // 可以复用的辅助函数
+  // 辅助函数
 
   // 获取游戏信息
   async function getGameInfo(ctx: Context, guildId: string) {
@@ -286,7 +302,7 @@ function registerAllKoishiCommands(ctx: Context) {
   }
   // 在排行榜表格中创建成员
   async function createPlayer(ctx: Context, userId: string, userName: string, score: number) {
-    await ctx.model.create('lms_rank', { userId: userId, userName: userName, score: score })
+    await ctx.model.create('lms_rank', { userId: userId, score: score, userName: userName })
   }
   // 更新成员列表
   async function updateMembers(ctx: Context, guildId: string, newMembers: string[]) {
@@ -416,13 +432,9 @@ function registerAllKoishiCommands(ctx: Context) {
   async function updateScoreForWinner(ctx: Context, winnerId: string, score: number) {
     const rankInfo = await getRankInfo(ctx, winnerId);
     if (isRankTableNotExist(rankInfo)) {
-      // createPlayer(ctx, winnerId, (await session.bot.getUser(winnerId)).username, score);
-      createPlayer(ctx, winnerId, `${h.at(winnerId)}`, score);
-    } else {
       updateScore(ctx, winnerId, rankInfo[0].score + score);
     }
   }
-
   // 定义一个函数来生成排行榜的纯文本
   function generateRankTable(rankInfo: LMSRank[]): string {
     // 定义排行榜的模板字符串
@@ -434,10 +446,9 @@ ${rankInfo.map((player, index) => ` ${String(index + 1).padStart(2, ' ')}   ${pl
 `
     return template
   }
-
-
-
 }
+
+
 
 
 

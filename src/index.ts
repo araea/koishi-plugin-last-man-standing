@@ -293,7 +293,7 @@ function registerAllKoishiCommands(ctx: Context) {
     return await ctx.model.get(GAME_ID, { guildId: guildId })
   }
   // 获取排行榜信息
-  async function getRankInfo(ctx: Context, userId: string) {
+  async function getRankInfo(ctx: Context, userId: string): Promise<LMSRank[]> {
     return await ctx.model.get(RANK_ID, { userId: userId })
   }
   // 在表格中创建游戏
@@ -413,7 +413,7 @@ function registerAllKoishiCommands(ctx: Context) {
       if (newMembers.length === 1) {
         // 为胜利者增加积分
         await updateScoreForWinner(ctx, newMembers[0], game.score);
-        restartGame(ctx, session.guildId);
+        await restartGame(ctx, session.guildId);
         await session.sendQueued(`${h.at(newMembers[0])} 赢了！获得 ${game.score} 点积分！`);
         return;
       }
@@ -431,9 +431,7 @@ function registerAllKoishiCommands(ctx: Context) {
   // 为胜利者增加积分函数
   async function updateScoreForWinner(ctx: Context, winnerId: string, score: number) {
     const rankInfo = await getRankInfo(ctx, winnerId);
-    if (isRankTableNotExist(rankInfo)) {
-      updateScore(ctx, winnerId, rankInfo[0].score + score);
-    }
+    await updateScore(ctx, winnerId, rankInfo[0].score + score);
   }
   // 定义一个函数来生成排行榜的纯文本
   function generateRankTable(rankInfo: LMSRank[]): string {

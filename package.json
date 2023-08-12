@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-last-man-standing",
   "description": "玩家轮流拿起手枪对自己的脑门开枪，直到只剩下最后一个人。",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -23,7 +23,10 @@
     "game",
     "last-man-standing",
     "russian roulette",
-    "shoot"
+    "shoot",
+    "最后一人站立",
+    "俄罗斯轮盘赌",
+    "轮盘赌"
   ],
   "peerDependencies": {
     "koishi": "^4.14.0"

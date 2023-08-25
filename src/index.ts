@@ -420,7 +420,7 @@ function registerAllKoishiCommands(ctx: Context) {
       // 根据玩家人数计算开枪成功率
       const hitRate = getHitRate(newMembers.length);
       updateGameStateOnDeath(ctx, session.guildId, newMembers, newMembers[index], hitRate);
-      await session.sendQueued(`接下来有请 ${h.at(newMembers[0])} 开枪！`);
+      await session.sendQueued(`接下来有请 ${h.at(newMembers[index])} 开枪！`);
     } else {
       // 获取下一位玩家 Id
       const memberId = getNextPlayerId(newMembers, game.memberId);
